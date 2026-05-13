@@ -40,7 +40,7 @@ router.delete('/warehouses/:id', warehouseCtrl.remove);
 
 // --- Routes ---
 router.get('/routes',          routeCtrl.getAll);
-router.get('/routes/optimize', routeCtrl.optimize); 
+router.post('/routes/optimize', routeCtrl.optimize);
 router.get('/routes/:id',      routeCtrl.getById);
 router.post('/routes',         routeCtrl.create);
 router.put('/routes/:id',      routeCtrl.update);

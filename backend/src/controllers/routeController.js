@@ -34,9 +34,9 @@ module.exports = {
   },
 
   optimize: (req, res, next) => {
-    try {
-      const { origin, destination } = req.query;
-      res.json(service.optimize(origin, destination));
-    } catch (e) { next(e); }
-  }
+  try {
+    const { origin, destinations } = req.body;
+    res.json(service.optimize(origin, destinations));
+  } catch (e) { next(e); }
+}
 };

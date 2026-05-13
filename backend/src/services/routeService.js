@@ -30,35 +30,62 @@ module.exports = {
     repo.remove(id);
   },
 
-  // "оптимізація маршруту"
-  // спрощена: знаходимо маршрут з найменшою відстанню між двома точками серед існуючих. 
-  // Далі — алгоритм Дейкстри або API.
-  optimize: (origin, destination) => {
-    if (!origin || !destination) {
-      throw { status: 400, message: 'Both origin and destination are required' };
+  optimize: (origin, destinations) => {
+    if (!origin || !Array.isArray(destinations) || destinations.length === 0) {
+      throw { status: 400, message: 'Origin and an array of destinations are required' };
     }
 
-    const candidates = repo.findAll().filter(
-      r => r.origin.toLowerCase() === origin.toLowerCase() &&
-           r.destination.toLowerCase() === destination.toLowerCase()
+    let uncovered = [...new Set(destinations.map(d => d.toLowerCase()))];
+    const plan = [];
+    
+    // Беремо всі маршрути, що починаються з нашої точки А
+    const availableRoutes = repo.findAll().filter(
+      r => r.origin.toLowerCase() === origin.toLowerCase()
     );
 
-    if (!candidates.length) {
-      throw {
-        status: 404,
-        message: `No routes found from "${origin}" to "${destination}"`,
-      };
+    // Поки у нас є міста, які не ввійшли в план, і є доступні маршрути
+    while (uncovered.length > 0) {
+      let bestRoute = null;
+      let bestCoveredForThisStep = [];
+
+      for (const route of availableRoutes) {
+        // Перевіряємо, скільки НЕПОКРИТИХ міст закриває цей конкретний маршрут
+        const coveredByThisRoute = uncovered.filter(city => 
+          route.destination.toLowerCase() === city ||
+          route.waypoints.some(wp => wp.toLowerCase() === city)
+        );
+
+        if (coveredByThisRoute.length > (bestCoveredForThisStep.length)) {
+          bestRoute = route;
+          bestCoveredForThisStep = coveredByThisRoute;
+        } 
+        else if (coveredByThisRoute.length === bestCoveredForThisStep.length && 
+                bestCoveredForThisStep.length > 0 &&
+                route.distanceKm < bestRoute.distanceKm) {
+          bestRoute = route;
+        }
+      }
+
+      if (!bestRoute || bestCoveredForThisStep.length === 0) break;
+
+      plan.push({
+        routeId: bestRoute.id,
+        path: `${bestRoute.origin} -> ${bestRoute.destination}`,
+        distance: bestRoute.distanceKm,
+        coveredCities: bestCoveredForThisStep,
+        waypoints: bestRoute.waypoints
+      });
+
+      // Видаляємо щойно покриті міста зі списку очікування
+      uncovered = uncovered.filter(city => !bestCoveredForThisStep.includes(city));
     }
-
-    // найоптимальніший = найкоротша відстань
-    const optimal = candidates.reduce((best, r) =>
-      r.distanceKm < best.distanceKm ? r : best
-    );
 
     return {
-      optimal,
-      alternatives: candidates.filter(r => r.id !== optimal.id),
-      totalCandidates: candidates.length,
+      origin,
+      deliveryPlan: plan,
+      totalRoutesUsed: plan.length,
+      unreachableCities: uncovered, 
+      status: uncovered.length === 0 ? 'Full coverage achieved' : 'Partial coverage'
     };
   },
 };
