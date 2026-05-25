@@ -1,34 +1,27 @@
-const Transport = require('../models/Transport');
-
-let transports = [];
-let nextId = 1;
+const { Transport } = require('../models');
 
 module.exports = {
-  findAll: () => [...transports],
+  findAll: async () => await Transport.findAll(),
 
-  findById: (id) => transports.find(t => t.id === Number(id)) || null,
+  findById: async (id) => await Transport.findByPk(id),
 
-  findAvailable: () => transports.filter(t => t.isAvailable),
+  findAvailable: async () => 
+    await Transport.findAll({ where: { isAvailable: true } }),
 
-  create: (data) => {
-    const transport = new Transport({ id: nextId++, ...data });
-    transports.push(transport);
-    return transport;
+  create: async (data) => await Transport.create(data),
+
+  update: async (id, data) => {
+    await Transport.update(data, { where: { id } });
+    return await Transport.findByPk(id);
   },
 
-  update: (id, data) => {
-    const idx = transports.findIndex(t => t.id === Number(id));
-    if (idx === -1) return null;
-    transports[idx] = { ...transports[idx], ...data, id: Number(id) };
-    return transports[idx];
+  remove: async (id) => {
+    const deletedCount = await Transport.destroy({ where: { id } });
+    return deletedCount > 0;
   },
 
-  remove: (id) => {
-    const idx = transports.findIndex(t => t.id === Number(id));
-    if (idx === -1) return false;
-    transports.splice(idx, 1);
-    return true;
+  exists: async (id) => {
+    const count = await Transport.count({ where: { id } });
+    return count > 0;
   },
-
-  exists: (id) => transports.some(t => t.id === Number(id)),
 };

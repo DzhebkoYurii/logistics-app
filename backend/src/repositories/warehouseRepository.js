@@ -1,32 +1,24 @@
-const Warehouse = require('../models/Warehouse');
- 
-let warehouses = [];
-let nextId = 1;
- 
+const { Warehouse } = require('../models');
+
 module.exports = {
-  findAll: () => [...warehouses],
- 
-  findById: (id) => warehouses.find(w => w.id === Number(id)) || null,
- 
-  create: (data) => {
-    const warehouse = new Warehouse({ id: nextId++, ...data });
-    warehouses.push(warehouse);
-    return warehouse;
+  findAll: async () => await Warehouse.findAll(),
+
+  findById: async (id) => await Warehouse.findByPk(id),
+
+  create: async (data) => await Warehouse.create(data),
+
+  update: async (id, data) => {
+    await Warehouse.update(data, { where: { id } });
+    return await Warehouse.findByPk(id);
   },
- 
-  update: (id, data) => {
-    const idx = warehouses.findIndex(w => w.id === Number(id));
-    if (idx === -1) return null;
-    warehouses[idx] = { ...warehouses[idx], ...data, id: Number(id) };
-    return warehouses[idx];
+
+  remove: async (id) => {
+    const deletedCount = await Warehouse.destroy({ where: { id } });
+    return deletedCount > 0;
   },
- 
-  remove: (id) => {
-    const idx = warehouses.findIndex(w => w.id === Number(id));
-    if (idx === -1) return false;
-    warehouses.splice(idx, 1);
-    return true;
+
+  exists: async (id) => {
+    const count = await Warehouse.count({ where: { id } });
+    return count > 0;
   },
- 
-  exists: (id) => warehouses.some(w => w.id === Number(id)),
 };

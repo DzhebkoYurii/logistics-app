@@ -1,6 +1,8 @@
 const router = require('express').Router();
 const { body } = require('express-validator');
 
+const validate = require('../middleware/validate');
+
 const clientCtrl    = require('../controllers/clientController');
 const shipmentCtrl  = require('../controllers/shipmentController');
 const warehouseCtrl = require('../controllers/warehouseController');
@@ -15,7 +17,7 @@ const clientRules = [
 ];
 router.get('/clients',         clientCtrl.getAll);
 router.get('/clients/:id',     clientCtrl.getById);
-router.post('/clients',        clientRules, clientCtrl.create);
+router.post('/clients',        clientRules, validate, clientCtrl.create);
 router.put('/clients/:id',     clientCtrl.update);
 router.delete('/clients/:id',  clientCtrl.remove);
 
@@ -26,7 +28,7 @@ router.get('/shipments/:id',             shipmentCtrl.getById);
 router.post('/shipments', [
   body('weight').isFloat({ min: 0.1 }).withMessage('Weight must be positive'),
   body('clientId').isInt().withMessage('clientId must be integer'),
-], shipmentCtrl.create);
+], validate, shipmentCtrl.create);
 router.put('/shipments/:id',    shipmentCtrl.update);
 router.delete('/shipments/:id', shipmentCtrl.remove);
 

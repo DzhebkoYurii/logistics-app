@@ -4,39 +4,39 @@ const routeRepo = require('../repositories/routeRepository');
 const VALID_TYPES = ['truck', 'van', 'motorcycle'];
 
 module.exports = {
-  getAll: () => repo.findAll(),
+  getAll: async () => await repo.findAll(),
 
-  getById: (id) => {
-    const transport = repo.findById(id);
+  getById: async (id) => {
+    const transport = await repo.findById(id);
     if (!transport) throw { status: 404, message: `Transport with id=${id} not found` };
     return transport;
   },
 
-  getAvailable: () => repo.findAvailable(),
+  getAvailable: async () => await repo.findAvailable(),
 
-  create: (data) => {
+  create: async (data) => {
     if (!VALID_TYPES.includes(data.type)) {
       throw { status: 400, message: `Invalid type. Allowed: ${VALID_TYPES.join(', ')}` };
     }
-    return repo.create(data);
+    return await repo.create(data);
   },
 
-  update: (id, data) => {
-    if (!repo.exists(id)) throw { status: 404, message: `Transport with id=${id} not found` };
+  update: async (id, data) => {
+    if (!(await repo.exists(id))) throw { status: 404, message: `Transport with id=${id} not found` };
     if (data.type && !VALID_TYPES.includes(data.type)) {
       throw { status: 400, message: `Invalid type. Allowed: ${VALID_TYPES.join(', ')}` };
     }
-    return repo.update(id, data);
+    return await repo.update(id, data);
   },
 
-  remove: (id) => {
-    if (!repo.exists(id)) throw { status: 404, message: `Transport with id=${id} not found` };
+  remove: async (id) => {
+    if (!(await repo.exists(id))) throw { status: 404, message: `Transport with id=${id} not found` };
 
-    const hasRoutes = routeRepo.findByTransportId(id).length > 0;
-    if (hasRoutes) {
+    const routes = await routeRepo.findByTransportId(id);
+    if (routes.length > 0) {
       throw { status: 409, message: `Cannot delete transport id=${id}: assigned to active routes` };
     }
 
-    repo.remove(id);
+    await repo.remove(id);
   },
 };

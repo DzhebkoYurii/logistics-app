@@ -1,42 +1,41 @@
 const service = require('../services/warehouseService');
-const { validationResult } = require('express-validator');
 
 module.exports = {
-  getAll: (req, res) => {
-    res.json(service.getAll());
-  },
-
-  getById: (req, res, next) => {
+  getAll: async (req, res, next) => {
     try {
-      res.json(service.getById(req.params.id));
+      res.json(await service.getAll());
     } catch (e) { next(e); }
   },
 
-  create: (req, res, next) => {
+  getById: async (req, res, next) => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-      res.status(201).json(service.create(req.body));
+      res.json(await service.getById(req.params.id));
     } catch (e) { next(e); }
   },
 
-  update: (req, res, next) => {
+  create: async (req, res, next) => {
     try {
-      res.json(service.update(req.params.id, req.body));
+      res.status(201).json(await service.create(req.body));
     } catch (e) { next(e); }
   },
 
-  remove: (req, res, next) => {
+  update: async (req, res, next) => {
     try {
-      service.remove(req.params.id);
+      res.json(await service.update(req.params.id, req.body));
+    } catch (e) { next(e); }
+  },
+
+  remove: async (req, res, next) => {
+    try {
+      await service.remove(req.params.id);
       res.status(204).send();
     } catch (e) { next(e); }
   },
 
-  transferShipment: (req, res, next) => {
+  transferShipment: async (req, res, next) => {
     try {
       const { shipmentId, fromWarehouseId, toWarehouseId } = req.body;
-      res.json(service.transferShipment(shipmentId, fromWarehouseId, toWarehouseId));
+      res.json(await service.transferShipment(shipmentId, fromWarehouseId, toWarehouseId));
     } catch (e) { next(e); }
   }
 };

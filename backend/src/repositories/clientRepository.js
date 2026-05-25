@@ -1,32 +1,24 @@
-const Client = require('../models/Client');
-
-let clients = [];
-let nextId = 1;
+const { Client } = require('../models');
 
 module.exports = {
-  findAll: () => [...clients],
+  findAll: async () => await Client.findAll(),
 
-  findById: (id) => clients.find(c => c.id === Number(id)) || null,
+  findById: async (id) => await Client.findByPk(id),
 
-  create: (data) => {
-    const client = new Client({ id: nextId++, ...data });
-    clients.push(client);
-    return client;
+  create: async (data) => await Client.create(data),
+
+  update: async (id, data) => {
+    await Client.update(data, { where: { id } });
+    return await Client.findByPk(id);
   },
 
-  update: (id, data) => {
-    const idx = clients.findIndex(c => c.id === Number(id));
-    if (idx === -1) return null;
-    clients[idx] = { ...clients[idx], ...data, id: Number(id) };
-    return clients[idx];
+  remove: async (id) => {
+    const deletedCount = await Client.destroy({ where: { id } });
+    return deletedCount > 0;
   },
 
-  remove: (id) => {
-    const idx = clients.findIndex(c => c.id === Number(id));
-    if (idx === -1) return false;
-    clients.splice(idx, 1);
-    return true;
+  exists: async (id) => {
+    const count = await Client.count({ where: { id } });
+    return count > 0;
   },
-
-  exists: (id) => clients.some(c => c.id === Number(id)),
 };

@@ -1,13 +1,13 @@
-class Transport {
-  constructor({ id, licensePlate, type, capacity, driverName, isAvailable }) {
-    this.id = id;
-    this.licensePlate = licensePlate;   
-    this.type = type;                   
-    this.capacity = capacity;          
-    this.driverName = driverName || null;
-    this.isAvailable = isAvailable !== undefined ? isAvailable : true;
-    this.createdAt = new Date().toISOString();
-  }
-}
- 
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+
+const Transport = sequelize.define('Transport', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  licensePlate: { type: DataTypes.STRING, allowNull: false },
+  type: { type: DataTypes.STRING, allowNull: false },
+  capacity: { type: DataTypes.FLOAT, allowNull: false },
+  driverName: { type: DataTypes.STRING, allowNull: true },
+  isAvailable: { type: DataTypes.BOOLEAN, defaultValue: true }
+});
+
 module.exports = Transport;

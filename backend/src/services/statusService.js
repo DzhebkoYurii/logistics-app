@@ -1,31 +1,31 @@
 const repo = require('../repositories/statusRepository');
 const shipmentRepo = require('../repositories/shipmentRepository');
-const Status = require('../models/Status');
+// Модель Status більше не імпортуємо напряму, валідацію статусів винесемо сюди
+const VALID_CODES = ['PENDING', 'PROCESSING', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'RETURNED'];
 
 module.exports = {
-  getAll: () => repo.findAll(),
+  getAll: async () => await repo.findAll(),
 
-  getByShipmentId: (shipmentId) => {
-    if (!shipmentRepo.exists(shipmentId)) {
+  getByShipmentId: async (shipmentId) => {
+    if (!(await shipmentRepo.exists(shipmentId))) {
       throw { status: 404, message: `Shipment with id=${shipmentId} not found` };
     }
-    return repo.findByShipmentId(shipmentId);
+    return await repo.findByShipmentId(shipmentId);
   },
 
-  getLatestForShipment: (shipmentId) => {
-    if (!shipmentRepo.exists(shipmentId)) {
+  getLatestForShipment: async (shipmentId) => {
+    if (!(await shipmentRepo.exists(shipmentId))) {
       throw { status: 404, message: `Shipment with id=${shipmentId} not found` };
     }
-    return repo.findLatestByShipmentId(shipmentId);
+    return await repo.findLatestByShipmentId(shipmentId);
   },
 
-  create: (data) => {
-    if (!shipmentRepo.exists(data.shipmentId)) {
+  create: async (data) => {
+    if (!(await shipmentRepo.exists(data.shipmentId))) {
       throw { status: 400, message: `Shipment with id=${data.shipmentId} does not exist` };
     }
 
-    // після DELIVERED або CANCELLED нові статуси не додаються
-    const latest = repo.findLatestByShipmentId(data.shipmentId);
+    const latest = await repo.findLatestByShipmentId(data.shipmentId);
     if (latest && ['DELIVERED', 'CANCELLED'].includes(latest.code)) {
       throw {
         status: 409,
@@ -33,7 +33,6 @@ module.exports = {
       };
     }
 
-    // валідація переходу статусів 
     const validTransitions = {
       PENDING:    ['PROCESSING', 'CANCELLED'],
       PROCESSING: ['IN_TRANSIT', 'CANCELLED'],
@@ -51,6 +50,6 @@ module.exports = {
       };
     }
 
-    return repo.create(data);
+    return await repo.create(data);
   },
 };

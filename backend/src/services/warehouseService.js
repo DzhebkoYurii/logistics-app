@@ -2,47 +2,54 @@ const repo = require('../repositories/warehouseRepository');
 const shipmentRepo = require('../repositories/shipmentRepository');
 
 module.exports = {
-  getAll: () => repo.findAll().map(w => ({
-    ...w,
-    availableCapacity: w.capacity - w.currentLoad,  
-  })),
-
-  getById: (id) => {
-    const warehouse = repo.findById(id);
-    if (!warehouse) throw { status: 404, message: `Warehouse with id=${id} not found` };
-    return { ...warehouse, availableCapacity: warehouse.capacity - warehouse.currentLoad };
+  getAll: async () => {
+    const warehouses = await repo.findAll();
+    return warehouses.map(w => {
+      const plainW = w.get ? w.get({ plain: true }) : w;
+      return {
+        ...plainW,
+        availableCapacity: plainW.capacity - plainW.currentLoad,  
+      };
+    });
   },
 
-  create: (data) => {
+  getById: async (id) => {
+    const warehouse = await repo.findById(id);
+    if (!warehouse) throw { status: 404, message: `Warehouse with id=${id} not found` };
+    const plainW = warehouse.get ? warehouse.get({ plain: true }) : warehouse;
+    return { ...plainW, availableCapacity: plainW.capacity - plainW.currentLoad };
+  },
+
+  create: async (data) => {
     if (data.currentLoad > data.capacity) {
       throw { status: 400, message: 'currentLoad cannot exceed capacity' };
     }
-    return repo.create(data);
+    return await repo.create(data);
   },
 
-  update: (id, data) => {
-    if (!repo.exists(id)) throw { status: 404, message: `Warehouse with id=${id} not found` };
+  update: async (id, data) => {
+    if (!(await repo.exists(id))) throw { status: 404, message: `Warehouse with id=${id} not found` };
     if (data.currentLoad !== undefined && data.capacity !== undefined &&
         data.currentLoad > data.capacity) {
       throw { status: 400, message: 'currentLoad cannot exceed capacity' };
     }
-    return repo.update(id, data);
+    return await repo.update(id, data);
   },
 
-  remove: (id) => {
-    if (!repo.exists(id)) throw { status: 404, message: `Warehouse with id=${id} not found` };
+  remove: async (id) => {
+    if (!(await repo.exists(id))) throw { status: 404, message: `Warehouse with id=${id} not found` };
 
-    const hasShipments = shipmentRepo.findByWarehouseId(id).length > 0;
-    if (hasShipments) {
+    const shipments = await shipmentRepo.findByWarehouseId(id);
+    if (shipments.length > 0) {
       throw { status: 409, message: `Cannot delete warehouse id=${id}: has active shipments` };
     }
 
-    repo.remove(id);
+    await repo.remove(id);
   },
 
-  transferShipment: (shipmentId, fromWarehouseId, toWarehouseId) => {
-    const from = repo.findById(fromWarehouseId);
-    const to = repo.findById(toWarehouseId);
+  transferShipment: async (shipmentId, fromWarehouseId, toWarehouseId) => {
+    const from = await repo.findById(fromWarehouseId);
+    const to = await repo.findById(toWarehouseId);
 
     if (!from) throw { status: 404, message: `Source warehouse id=${fromWarehouseId} not found` };
     if (!to) throw { status: 404, message: `Target warehouse id=${toWarehouseId} not found` };
@@ -50,10 +57,10 @@ module.exports = {
       throw { status: 409, message: `Target warehouse id=${toWarehouseId} is at full capacity` };
     }
 
-    repo.update(fromWarehouseId, { currentLoad: Math.max(0, from.currentLoad - 1) });
-    repo.update(toWarehouseId, { currentLoad: to.currentLoad + 1 });
+    await repo.update(fromWarehouseId, { currentLoad: Math.max(0, from.currentLoad - 1) });
+    await repo.update(toWarehouseId, { currentLoad: to.currentLoad + 1 });
 
-    shipmentRepo.update(shipmentId, { warehouseId: Number(toWarehouseId) });
+    await shipmentRepo.update(shipmentId, { warehouseId: Number(toWarehouseId) });
 
     return {
       shipmentId: Number(shipmentId),

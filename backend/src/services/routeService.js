@@ -2,35 +2,35 @@ const repo = require('../repositories/routeRepository');
 const transportRepo = require('../repositories/transportRepository');
 
 module.exports = {
-  getAll: () => repo.findAll(),
+  getAll: async () => await repo.findAll(),
 
-  getById: (id) => {
-    const route = repo.findById(id);
+  getById: async (id) => {
+    const route = await repo.findById(id);
     if (!route) throw { status: 404, message: `Route with id=${id} not found` };
     return route;
   },
 
-  create: (data) => {
-    if (data.transportId && !transportRepo.exists(data.transportId)) {
+  create: async (data) => {
+    if (data.transportId && !(await transportRepo.exists(data.transportId))) {
       throw { status: 400, message: `Transport with id=${data.transportId} does not exist` };
     }
-    return repo.create(data);
+    return await repo.create(data);
   },
 
-  update: (id, data) => {
-    if (!repo.exists(id)) throw { status: 404, message: `Route with id=${id} not found` };
-    if (data.transportId && !transportRepo.exists(data.transportId)) {
+  update: async (id, data) => {
+    if (!(await repo.exists(id))) throw { status: 404, message: `Route with id=${id} not found` };
+    if (data.transportId && !(await transportRepo.exists(data.transportId))) {
       throw { status: 400, message: `Transport with id=${data.transportId} does not exist` };
     }
-    return repo.update(id, data);
+    return await repo.update(id, data);
   },
 
-  remove: (id) => {
-    if (!repo.exists(id)) throw { status: 404, message: `Route with id=${id} not found` };
-    repo.remove(id);
+  remove: async (id) => {
+    if (!(await repo.exists(id))) throw { status: 404, message: `Route with id=${id} not found` };
+    await repo.remove(id);
   },
 
-  optimize: (origin, destinations) => {
+  optimize: async (origin, destinations) => {
     if (!origin || !Array.isArray(destinations) || destinations.length === 0) {
       throw { status: 400, message: 'Origin and an array of destinations are required' };
     }
@@ -38,21 +38,21 @@ module.exports = {
     let uncovered = [...new Set(destinations.map(d => d.toLowerCase()))];
     const plan = [];
     
-    // Беремо всі маршрути, що починаються з нашої точки А
-    const availableRoutes = repo.findAll().filter(
+    const allRoutes = await repo.findAll();
+    const availableRoutes = allRoutes.filter(
       r => r.origin.toLowerCase() === origin.toLowerCase()
     );
 
-    // Поки у нас є міста, які не ввійшли в план, і є доступні маршрути
     while (uncovered.length > 0) {
       let bestRoute = null;
       let bestCoveredForThisStep = [];
 
       for (const route of availableRoutes) {
-        // Перевіряємо, скільки НЕПОКРИТИХ міст закриває цей конкретний маршрут
+        // Якщо це Sequelize масив, waypoints можуть потребувати перевірки
+        const waypoints = route.waypoints || []; 
         const coveredByThisRoute = uncovered.filter(city => 
           route.destination.toLowerCase() === city ||
-          route.waypoints.some(wp => wp.toLowerCase() === city)
+          waypoints.some(wp => wp.toLowerCase() === city)
         );
 
         if (coveredByThisRoute.length > (bestCoveredForThisStep.length)) {
@@ -76,7 +76,6 @@ module.exports = {
         waypoints: bestRoute.waypoints
       });
 
-      // Видаляємо щойно покриті міста зі списку очікування
       uncovered = uncovered.filter(city => !bestCoveredForThisStep.includes(city));
     }
 

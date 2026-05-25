@@ -1,38 +1,39 @@
 const service = require('../services/transportService');
-const { validationResult } = require('express-validator');
 
 module.exports = {
-  getAll: (req, res) => {
-    res.json(service.getAll());
-  },
-
-  getById: (req, res, next) => {
+  getAll: async (req, res, next) => {
     try {
-      res.json(service.getById(req.params.id));
+      res.json(await service.getAll());
     } catch (e) { next(e); }
   },
 
-  getAvailable: (req, res) => {
-    res.json(service.getAvailable());
-  },
-
-  create: (req, res, next) => {
+  getById: async (req, res, next) => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-      res.status(201).json(service.create(req.body));
+      res.json(await service.getById(req.params.id));
     } catch (e) { next(e); }
   },
 
-  update: (req, res, next) => {
+  getAvailable: async (req, res, next) => {
     try {
-      res.json(service.update(req.params.id, req.body));
+      res.json(await service.getAvailable());
     } catch (e) { next(e); }
   },
 
-  remove: (req, res, next) => {
+  create: async (req, res, next) => {
     try {
-      service.remove(req.params.id);
+      res.status(201).json(await service.create(req.body));
+    } catch (e) { next(e); }
+  },
+
+  update: async (req, res, next) => {
+    try {
+      res.json(await service.update(req.params.id, req.body));
+    } catch (e) { next(e); }
+  },
+
+  remove: async (req, res, next) => {
+    try {
+      await service.remove(req.params.id);
       res.status(204).send();
     } catch (e) { next(e); }
   }

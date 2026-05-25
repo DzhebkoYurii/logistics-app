@@ -5,42 +5,51 @@ const routeRepo = require('../repositories/routeRepository');
 const statusRepo = require('../repositories/statusRepository');
 
 module.exports = {
-  getAll: () => {
-    return repo.findAll().map(s => ({
-      ...s,
-      currentStatus: statusRepo.findLatestByShipmentId(s.id),
+  getAll: async () => {
+    const shipments = await repo.findAll();
+    // Використовуємо Promise.all для асинхронного map
+    return await Promise.all(shipments.map(async s => {
+      const plainS = s.get ? s.get({ plain: true }) : s;
+      return {
+        ...plainS,
+        currentStatus: await statusRepo.findLatestByShipmentId(plainS.id),
+      };
     }));
   },
 
-  getById: (id) => {
-    const shipment = repo.findById(id);
+  getById: async (id) => {
+    const shipment = await repo.findById(id);
     if (!shipment) throw { status: 404, message: `Shipment with id=${id} not found` };
+    const plainS = shipment.get ? shipment.get({ plain: true }) : shipment;
+    
     return {
-      ...shipment,
-      currentStatus: statusRepo.findLatestByShipmentId(id),
-      statusHistory: statusRepo.findByShipmentId(id),
+      ...plainS,
+      currentStatus: await statusRepo.findLatestByShipmentId(id),
+      statusHistory: await statusRepo.findByShipmentId(id),
     };
   },
 
-  trackByNumber: (trackingNumber) => {
-    const shipment = repo.findByTrackingNumber(trackingNumber);
+  trackByNumber: async (trackingNumber) => {
+    const shipment = await repo.findByTrackingNumber(trackingNumber);
     if (!shipment) {
       throw { status: 404, message: `Tracking number "${trackingNumber}" not found` };
     }
+    const plainS = shipment.get ? shipment.get({ plain: true }) : shipment;
+
     return {
-      ...shipment,
-      currentStatus: statusRepo.findLatestByShipmentId(shipment.id),
-      statusHistory: statusRepo.findByShipmentId(shipment.id),
+      ...plainS,
+      currentStatus: await statusRepo.findLatestByShipmentId(plainS.id),
+      statusHistory: await statusRepo.findByShipmentId(plainS.id),
     };
   },
 
-  create: (data) => {
-    if (!clientRepo.exists(data.clientId)) {
+  create: async (data) => {
+    if (!(await clientRepo.exists(data.clientId))) {
       throw { status: 400, message: `Client with id=${data.clientId} does not exist` };
     }
 
     if (data.warehouseId) {
-      const warehouse = warehouseRepo.findById(data.warehouseId);
+      const warehouse = await warehouseRepo.findById(data.warehouseId);
       if (!warehouse) {
         throw { status: 400, message: `Warehouse with id=${data.warehouseId} does not exist` };
       }
@@ -49,24 +58,25 @@ module.exports = {
       }
     }
 
-    if (data.routeId && !routeRepo.exists(data.routeId)) {
+    if (data.routeId && !(await routeRepo.exists(data.routeId))) {
       throw { status: 400, message: `Route with id=${data.routeId} does not exist` };
     }
 
-    const shipment = repo.create(data);
+    const shipment = await repo.create(data);
+    const plainS = shipment.get ? shipment.get({ plain: true }) : shipment;
 
-    statusRepo.create({ shipmentId: shipment.id, code: 'PENDING', note: 'Shipment created' });
+    await statusRepo.create({ shipmentId: plainS.id, code: 'PENDING', note: 'Shipment created' });
 
-    return { ...shipment, currentStatus: statusRepo.findLatestByShipmentId(shipment.id) };
+    return { ...plainS, currentStatus: await statusRepo.findLatestByShipmentId(plainS.id) };
   },
 
-  update: (id, data) => {
-    if (!repo.exists(id)) throw { status: 404, message: `Shipment with id=${id} not found` };
-    return repo.update(id, data);
+  update: async (id, data) => {
+    if (!(await repo.exists(id))) throw { status: 404, message: `Shipment with id=${id} not found` };
+    return await repo.update(id, data);
   },
 
-  remove: (id) => {
-    if (!repo.exists(id)) throw { status: 404, message: `Shipment with id=${id} not found` };
-    repo.remove(id);
+  remove: async (id) => {
+    if (!(await repo.exists(id))) throw { status: 404, message: `Shipment with id=${id} not found` };
+    await repo.remove(id);
   },
 };

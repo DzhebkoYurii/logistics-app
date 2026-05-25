@@ -6,21 +6,20 @@
 //   CANCELLED   — скасовано
 //   RETURNED    — повернено відправнику
  
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+
 const VALID_CODES = ['PENDING', 'PROCESSING', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'RETURNED'];
- 
-class Status {
-  constructor({ id, shipmentId, code, note }) {
-    if (!VALID_CODES.includes(code)) {
-      throw new Error(`Invalid status code. Allowed: ${VALID_CODES.join(', ')}`);
-    }
-    this.id = id;
-    this.shipmentId = shipmentId; 
-    this.code = code;
-    this.note = note || null;     
-    this.createdAt = new Date().toISOString(); 
-  }
-}
- 
-Status.VALID_CODES = VALID_CODES;
- 
+
+const Status = sequelize.define('Status', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  code: { 
+    type: DataTypes.ENUM(...VALID_CODES), 
+    allowNull: false 
+  },
+  note: { type: DataTypes.STRING, allowNull: true }
+});
+
+Status.VALID_CODES = VALID_CODES; 
+
 module.exports = Status;

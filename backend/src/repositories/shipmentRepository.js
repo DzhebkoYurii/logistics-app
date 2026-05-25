@@ -1,41 +1,33 @@
-const Shipment = require('../models/Shipment');
- 
-let shipments = [];
-let nextId = 1;
- 
+const { Shipment } = require('../models');
+
 module.exports = {
-  findAll: () => [...shipments],
- 
-  findById: (id) => shipments.find(s => s.id === Number(id)) || null,
- 
-  findByTrackingNumber: (trackingNumber) =>
-    shipments.find(s => s.trackingNumber === trackingNumber) || null,
- 
-  findByClientId: (clientId) =>
-    shipments.filter(s => s.clientId === Number(clientId)),
- 
-  findByWarehouseId: (warehouseId) =>
-    shipments.filter(s => s.warehouseId === Number(warehouseId)),
- 
-  create: (data) => {
-    const shipment = new Shipment({ id: nextId++, ...data });
-    shipments.push(shipment);
-    return shipment;
+  findAll: async () => await Shipment.findAll(),
+
+  findById: async (id) => await Shipment.findByPk(id),
+
+  findByTrackingNumber: async (trackingNumber) => 
+    await Shipment.findOne({ where: { trackingNumber } }),
+
+  findByClientId: async (clientId) => 
+    await Shipment.findAll({ where: { clientId } }),
+
+  findByWarehouseId: async (warehouseId) => 
+    await Shipment.findAll({ where: { warehouseId } }),
+
+  create: async (data) => await Shipment.create(data),
+
+  update: async (id, data) => {
+    await Shipment.update(data, { where: { id } });
+    return await Shipment.findByPk(id);
   },
- 
-  update: (id, data) => {
-    const idx = shipments.findIndex(s => s.id === Number(id));
-    if (idx === -1) return null;
-    shipments[idx] = { ...shipments[idx], ...data, id: Number(id) };
-    return shipments[idx];
+
+  remove: async (id) => {
+    const deletedCount = await Shipment.destroy({ where: { id } });
+    return deletedCount > 0;
   },
- 
-  remove: (id) => {
-    const idx = shipments.findIndex(s => s.id === Number(id));
-    if (idx === -1) return false;
-    shipments.splice(idx, 1);
-    return true;
+
+  exists: async (id) => {
+    const count = await Shipment.count({ where: { id } });
+    return count > 0;
   },
- 
-  exists: (id) => shipments.some(s => s.id === Number(id)),
 };

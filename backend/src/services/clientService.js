@@ -2,39 +2,41 @@ const repo = require('../repositories/clientRepository');
 const shipmentRepo = require('../repositories/shipmentRepository');
 
 module.exports = {
-  getAll: () => repo.findAll(),
+  getAll: async () => await repo.findAll(),
 
-  getById: (id) => {
-    const client = repo.findById(id);
+  getById: async (id) => {
+    const client = await repo.findById(id);
     if (!client) throw { status: 404, message: `Client with id=${id} not found` };
     return client;
   },
 
-  create: (data) => {
-    const duplicate = repo.findAll().find(c => c.email === data.email);
+  create: async (data) => {
+    const clients = await repo.findAll();
+    const duplicate = clients.find(c => c.email === data.email);
     if (duplicate) throw { status: 409, message: `Email "${data.email}" is already in use` };
-    return repo.create(data);
+    return await repo.create(data);
   },
 
-  update: (id, data) => {
-    if (!repo.exists(id)) throw { status: 404, message: `Client with id=${id} not found` };
+  update: async (id, data) => {
+    if (!(await repo.exists(id))) throw { status: 404, message: `Client with id=${id} not found` };
 
     if (data.email) {
-      const duplicate = repo.findAll().find(c => c.email === data.email && c.id !== Number(id));
+      const clients = await repo.findAll();
+      const duplicate = clients.find(c => c.email === data.email && c.id !== Number(id));
       if (duplicate) throw { status: 409, message: `Email "${data.email}" is already in use` };
     }
 
-    return repo.update(id, data);
+    return await repo.update(id, data);
   },
 
-  remove: (id) => {
-    if (!repo.exists(id)) throw { status: 404, message: `Client with id=${id} not found` };
+  remove: async (id) => {
+    if (!(await repo.exists(id))) throw { status: 404, message: `Client with id=${id} not found` };
 
-    const hasShipments = shipmentRepo.findByClientId(id).length > 0;
-    if (hasShipments) {
+    const shipments = await shipmentRepo.findByClientId(id);
+    if (shipments.length > 0) {
       throw { status: 409, message: `Cannot delete client id=${id}: has active shipments` };
     }
 
-    repo.remove(id);
+    await repo.remove(id);
   },
 };

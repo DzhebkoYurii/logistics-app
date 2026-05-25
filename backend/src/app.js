@@ -5,6 +5,13 @@ require('dotenv').config();
 const routes = require('./routes');
 const errorHandler = require('./middleware/errorHandler');
 
+const sequelize = require('./config/database');
+require('./models/index');
+
+sequelize.sync({ alter: true }) 
+  .then(() => console.log('Database synced successfully'))
+  .catch(err => console.error('Database sync error:', err));
+
 const app = express();
 app.use(cors());
 app.use(express.json());

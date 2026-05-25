@@ -1,35 +1,27 @@
-const Route = require('../models/Route');
-
-let routes = [];
-let nextId = 1;
+const { Route } = require('../models');
 
 module.exports = {
-  findAll: () => [...routes],
+  findAll: async () => await Route.findAll(),
 
-  findById: (id) => routes.find(r => r.id === Number(id)) || null,
+  findById: async (id) => await Route.findByPk(id),
 
-  findByTransportId: (transportId) =>
-    routes.filter(r => r.transportId === Number(transportId)),
+  findByTransportId: async (transportId) => 
+    await Route.findAll({ where: { transportId } }),
 
-  create: (data) => {
-    const route = new Route({ id: nextId++, ...data });
-    routes.push(route);
-    return route;
+  create: async (data) => await Route.create(data),
+
+  update: async (id, data) => {
+    await Route.update(data, { where: { id } });
+    return await Route.findByPk(id);
   },
 
-  update: (id, data) => {
-    const idx = routes.findIndex(r => r.id === Number(id));
-    if (idx === -1) return null;
-    routes[idx] = { ...routes[idx], ...data, id: Number(id) };
-    return routes[idx];
+  remove: async (id) => {
+    const deletedCount = await Route.destroy({ where: { id } });
+    return deletedCount > 0;
   },
 
-  remove: (id) => {
-    const idx = routes.findIndex(r => r.id === Number(id));
-    if (idx === -1) return false;
-    routes.splice(idx, 1);
-    return true;
+  exists: async (id) => {
+    const count = await Route.count({ where: { id } });
+    return count > 0;
   },
-
-  exists: (id) => routes.some(r => r.id === Number(id)),
 };

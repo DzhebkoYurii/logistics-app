@@ -1,30 +1,21 @@
-const Status = require('../models/Status');
-
-let statuses = [];
-let nextId = 1;
+const { Status } = require('../models');
 
 module.exports = {
-  findAll: () => [...statuses],
+  findAll: async () => await Status.findAll(),
 
-  findById: (id) => statuses.find(s => s.id === Number(id)) || null,
+  findById: async (id) => await Status.findByPk(id),
 
-  findByShipmentId: (shipmentId) =>
-    statuses
-      .filter(s => s.shipmentId === Number(shipmentId))
-      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)),
+  findByShipmentId: async (shipmentId) => 
+    await Status.findAll({
+      where: { shipmentId },
+      order: [['createdAt', 'ASC']] // База даних сама відсортує від найстарішого
+    }),
 
-  findLatestByShipmentId: (shipmentId) => {
-    const all = statuses.filter(s => s.shipmentId === Number(shipmentId));
-    if (!all.length) return null;
-    return all.reduce((latest, s) =>
-      new Date(s.createdAt) > new Date(latest.createdAt) ? s : latest
-    );
-  },
+  findLatestByShipmentId: async (shipmentId) => 
+    await Status.findOne({
+      where: { shipmentId },
+      order: [['createdAt', 'DESC']] // Беремо найновіший запис
+    }),
 
-  create: (data) => {
-    const status = new Status({ id: nextId++, ...data });
-    statuses.push(status);
-    return status;
-  },
-
+  create: async (data) => await Status.create(data),
 };
