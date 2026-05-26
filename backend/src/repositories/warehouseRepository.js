@@ -7,9 +7,9 @@ module.exports = {
 
   create: async (data) => await Warehouse.create(data),
 
-  update: async (id, data) => {
-    await Warehouse.update(data, { where: { id } });
-    return await Warehouse.findByPk(id);
+  update: async (id, data, options = {}) => {
+    await Warehouse.update(data, { where: { id }, ...options });
+    return await Warehouse.findByPk(id, options);
   },
 
   remove: async (id) => {

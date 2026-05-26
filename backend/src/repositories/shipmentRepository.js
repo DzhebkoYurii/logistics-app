@@ -16,9 +16,9 @@ module.exports = {
 
   create: async (data) => await Shipment.create(data),
 
-  update: async (id, data) => {
-    await Shipment.update(data, { where: { id } });
-    return await Shipment.findByPk(id);
+  update: async (id, data, options = {}) => {
+    await Shipment.update(data, { where: { id }, ...options });
+    return await Shipment.findByPk(id, options);
   },
 
   remove: async (id) => {

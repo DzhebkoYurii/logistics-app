@@ -1,5 +1,6 @@
 const repo = require('../repositories/warehouseRepository');
 const shipmentRepo = require('../repositories/shipmentRepository');
+const sequelize = require('../config/database');
 
 module.exports = {
   getAll: async () => {
@@ -57,15 +58,23 @@ module.exports = {
       throw { status: 409, message: `Target warehouse id=${toWarehouseId} is at full capacity` };
     }
 
-    await repo.update(fromWarehouseId, { currentLoad: Math.max(0, from.currentLoad - 1) });
-    await repo.update(toWarehouseId, { currentLoad: to.currentLoad + 1 });
+    const t = await sequelize.transaction();
 
-    await shipmentRepo.update(shipmentId, { warehouseId: Number(toWarehouseId) });
+    try {
+      await repo.update(fromWarehouseId, { currentLoad: Math.max(0, from.currentLoad - 1) }, { transaction: t });
+      await repo.update(toWarehouseId, { currentLoad: to.currentLoad + 1 }, { transaction: t });
+      await shipmentRepo.update(shipmentId, { warehouseId: Number(toWarehouseId) }, { transaction: t });
 
-    return {
-      shipmentId: Number(shipmentId),
-      movedFrom: fromWarehouseId,
-      movedTo: toWarehouseId,
-    };
-  },
+      await t.commit();
+
+      return {
+        shipmentId: Number(shipmentId),
+        movedFrom: fromWarehouseId,
+        movedTo: toWarehouseId,
+      };
+    } catch (error) {
+      await t.rollback();
+      throw { status: 500, message: 'Transaction failed and rolled back', details: error.message };
+    }
+  }
 };
