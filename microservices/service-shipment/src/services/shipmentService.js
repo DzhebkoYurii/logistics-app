@@ -93,4 +93,40 @@ module.exports = {
     if (!(await repo.exists(id))) throw { status: 404, message: `Shipment with id=${id} not found` };
     await repo.remove(id);
   },
+
+  transferShipment: async (shipmentId, fromWarehouseId, toWarehouseId) => {
+    // Перевіряємо, чи існує посилка у БД
+    const shipment = await repo.findById(shipmentId);
+    if (!shipment) throw { status: 404, message: `Shipment with id=${shipmentId} not found` };
+
+    // HTTP-запит до Сервісу Складів, щоб він змінив місткість
+    try {
+      await axios.post('http://localhost:8082/api/warehouses/transfer-capacity', {
+        fromWarehouseId,
+        toWarehouseId
+      });
+    } catch (error) {
+      if (error.response) {
+        throw { status: error.response.status, message: error.response.data.message };
+      }
+      throw { status: 503, message: 'Warehouse service is currently unavailable' };
+    }
+
+    // змінюємо склад у самій посилці
+    await repo.update(shipmentId, { warehouseId: Number(toWarehouseId) });
+
+    // Логуємо в історію статусів
+    await statusRepo.create({ 
+      shipmentId, 
+      code: 'PROCESSING', 
+      note: `Transferred from warehouse ${fromWarehouseId} to ${toWarehouseId}` 
+    });
+
+    return {
+      shipmentId: Number(shipmentId),
+      movedFrom: fromWarehouseId,
+      movedTo: toWarehouseId,
+      status: 'Transfer complete'
+    };
+  }
 };

@@ -42,4 +42,27 @@ module.exports = {
     await repo.remove(id);
   },
 
+  transferCapacity: async (fromWarehouseId, toWarehouseId) => {
+    const from = await repo.findById(fromWarehouseId);
+    const to = await repo.findById(toWarehouseId);
+
+    if (!from) throw { status: 404, message: `Source warehouse id=${fromWarehouseId} not found` };
+    if (!to) throw { status: 404, message: `Target warehouse id=${toWarehouseId} not found` };
+    if (to.currentLoad >= to.capacity) {
+      throw { status: 409, message: `Target warehouse id=${toWarehouseId} is at full capacity` };
+    }
+
+    // Локальна транзакція тільки для складів
+    const t = await sequelize.transaction();
+    try {
+      await repo.update(fromWarehouseId, { currentLoad: Math.max(0, from.currentLoad - 1) }, { transaction: t });
+      await repo.update(toWarehouseId, { currentLoad: to.currentLoad + 1 }, { transaction: t });
+      await t.commit();
+      return { message: "Capacity transferred successfully" };
+    } catch (error) {
+      await t.rollback();
+      throw { status: 500, message: 'Warehouse transaction failed' };
+    }
+  }
+
 };

@@ -36,5 +36,12 @@ module.exports = {
       await service.remove(req.params.id);
       res.status(204).send();
     } catch (e) { next(e); }
+  },
+
+  transferShipment: async (req, res, next) => {
+    try {
+      const { shipmentId, fromWarehouseId, toWarehouseId } = req.body;
+      res.json(await service.transferShipment(shipmentId, fromWarehouseId, toWarehouseId));
+    } catch (e) { next(e); }
   }
 };

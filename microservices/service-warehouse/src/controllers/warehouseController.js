@@ -32,4 +32,11 @@ module.exports = {
     } catch (e) { next(e); }
   },
 
+  transferCapacity: async (req, res, next) => {
+    try {
+      const { fromWarehouseId, toWarehouseId } = req.body;
+      res.json(await service.transferCapacity(fromWarehouseId, toWarehouseId));
+    } catch (e) { next(e); }
+  }
+
 };

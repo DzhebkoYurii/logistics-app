@@ -28,6 +28,7 @@ router.post('/shipments', [
 ], validate, shipmentCtrl.create);
 router.put('/shipments/:id',    shipmentCtrl.update);
 router.delete('/shipments/:id', shipmentCtrl.remove);
+router.post('/shipments/transfer', shipmentCtrl.transferShipment);
 
 // --- Statuses ---
 router.get('/statuses',                         statusCtrl.getAll);
