@@ -1,13 +1,11 @@
 const repo = require('../repositories/shipmentRepository');
 const clientRepo = require('../repositories/clientRepository');
-const warehouseRepo = require('../repositories/warehouseRepository');
-const routeRepo = require('../repositories/routeRepository');
 const statusRepo = require('../repositories/statusRepository');
+const axios = require('axios'); // Додали axios для мережевих запитів
 
 module.exports = {
   getAll: async () => {
     const shipments = await repo.findAll();
-    // Використовуємо Promise.all для асинхронного map
     return await Promise.all(shipments.map(async s => {
       const plainS = s.get ? s.get({ plain: true }) : s;
       return {
@@ -44,22 +42,38 @@ module.exports = {
   },
 
   create: async (data) => {
+    // Перевірка у власній БД
     if (!(await clientRepo.exists(data.clientId))) {
       throw { status: 400, message: `Client with id=${data.clientId} does not exist` };
     }
 
+    // Міжсервісний виклик до Service Warehouse (порт 8082)
     if (data.warehouseId) {
-      const warehouse = await warehouseRepo.findById(data.warehouseId);
-      if (!warehouse) {
-        throw { status: 400, message: `Warehouse with id=${data.warehouseId} does not exist` };
-      }
-      if (warehouse.currentLoad >= warehouse.capacity) {
-        throw { status: 409, message: `Warehouse id=${data.warehouseId} is at full capacity` };
+      try {
+        const response = await axios.get(`http://localhost:8082/api/warehouses/${data.warehouseId}`);
+        const warehouse = response.data;
+        if (warehouse.currentLoad >= warehouse.capacity) {
+          throw { status: 409, message: `Warehouse id=${data.warehouseId} is at full capacity` };
+        }
+      } catch (error) {
+        if (error.response && error.response.status === 404) {
+          throw { status: 400, message: `Warehouse with id=${data.warehouseId} does not exist` };
+        }
+        // Якщо сервіс складів лежить (вимкнений або впав)
+        throw { status: 503, message: 'Warehouse service is currently unavailable' };
       }
     }
 
-    if (data.routeId && !(await routeRepo.exists(data.routeId))) {
-      throw { status: 400, message: `Route with id=${data.routeId} does not exist` };
+    // Міжсервісний виклик до Service Routing (порт 8083)
+    if (data.routeId) {
+      try {
+        await axios.get(`http://localhost:8083/api/routes/${data.routeId}`);
+      } catch (error) {
+        if (error.response && error.response.status === 404) {
+          throw { status: 400, message: `Route with id=${data.routeId} does not exist` };
+        }
+        throw { status: 503, message: 'Routing service is currently unavailable' };
+      }
     }
 
     const shipment = await repo.create(data);

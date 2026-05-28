@@ -5,9 +5,6 @@ const validate = require('../middleware/validate');
 
 const clientCtrl    = require('../controllers/clientController');
 const shipmentCtrl  = require('../controllers/shipmentController');
-const warehouseCtrl = require('../controllers/warehouseController');
-const routeCtrl     = require('../controllers/routeController');
-const transportCtrl = require('../controllers/transportController');
 const statusCtrl    = require('../controllers/statusController');
 
 // --- Clients ---
@@ -31,30 +28,6 @@ router.post('/shipments', [
 ], validate, shipmentCtrl.create);
 router.put('/shipments/:id',    shipmentCtrl.update);
 router.delete('/shipments/:id', shipmentCtrl.remove);
-
-// --- Warehouses ---
-router.get('/warehouses',      warehouseCtrl.getAll);
-router.get('/warehouses/:id',  warehouseCtrl.getById);
-router.post('/warehouses/transfer', warehouseCtrl.transferShipment); 
-router.post('/warehouses',     warehouseCtrl.create);
-router.put('/warehouses/:id',  warehouseCtrl.update);
-router.delete('/warehouses/:id', warehouseCtrl.remove);
-
-// --- Routes ---
-router.get('/routes',          routeCtrl.getAll);
-router.post('/routes/optimize', routeCtrl.optimize);
-router.get('/routes/:id',      routeCtrl.getById);
-router.post('/routes',         routeCtrl.create);
-router.put('/routes/:id',      routeCtrl.update);
-router.delete('/routes/:id',   routeCtrl.remove); 
-
-// --- Transports ---
-router.get('/transports',           transportCtrl.getAll);
-router.get('/transports/available', transportCtrl.getAvailable); 
-router.get('/transports/:id',       transportCtrl.getById);
-router.post('/transports',          transportCtrl.create);
-router.put('/transports/:id',       transportCtrl.update);
-router.delete('/transports/:id',    transportCtrl.remove); 
 
 // --- Statuses ---
 router.get('/statuses',                         statusCtrl.getAll);
