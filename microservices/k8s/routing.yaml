@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-routing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-routing
+  template:
+    metadata:
+      labels:
+        app: service-routing
+    spec:
+      containers:
+      - name: service-routing
+        image: logistics-routing:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8083
+        env:
+        - name: PORT
+          value: "8083"
+        - name: DB_HOST
+          value: postgres
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: routing_db
+        - name: DB_USER
+          value: user
+        - name: DB_PASSWORD
+          value: password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-routing
+spec:
+  type: NodePort
+  selector:
+    app: service-routing
+  ports:
+    - protocol: TCP
+      port: 8083
+      targetPort: 8083
