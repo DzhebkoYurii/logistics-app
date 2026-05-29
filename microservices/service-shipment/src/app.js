@@ -7,6 +7,9 @@ const errorHandler = require('./middleware/errorHandler');
 
 const sequelize = require('./config/database');
 require('./models/index');
+require('./models/Client');
+require('./models/Shipment');
+require('./models/Status');
 
 sequelize.sync({ alter: true }) 
   .then(() => console.log('Database synced successfully'))
