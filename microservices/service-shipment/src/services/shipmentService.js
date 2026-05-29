@@ -1,7 +1,7 @@
 const repo = require('../repositories/shipmentRepository');
 const clientRepo = require('../repositories/clientRepository');
 const statusRepo = require('../repositories/statusRepository');
-const axios = require('axios'); // Додали axios для мережевих запитів
+const axios = require('axios'); 
 
 module.exports = {
   getAll: async () => {
@@ -50,7 +50,8 @@ module.exports = {
     // Міжсервісний виклик до Service Warehouse (порт 8082)
     if (data.warehouseId) {
       try {
-        const response = await axios.get(`http://localhost:8082/api/warehouses/${data.warehouseId}`);
+        const warehouseUrl = process.env.WAREHOUSE_SERVICE_URL || 'http://localhost:8082';
+        const response = await axios.get(`${warehouseUrl}/api/warehouses/${data.warehouseId}`);
         const warehouse = response.data;
         if (warehouse.currentLoad >= warehouse.capacity) {
           throw { status: 409, message: `Warehouse id=${data.warehouseId} is at full capacity` };
@@ -67,7 +68,8 @@ module.exports = {
     // Міжсервісний виклик до Service Routing (порт 8083)
     if (data.routeId) {
       try {
-        await axios.get(`http://localhost:8083/api/routes/${data.routeId}`);
+        const routingUrl = process.env.ROUTING_SERVICE_URL || 'http://localhost:8083';
+        await axios.get(`${routingUrl}/api/routes/${data.routeId}`);
       } catch (error) {
         if (error.response && error.response.status === 404) {
           throw { status: 400, message: `Route with id=${data.routeId} does not exist` };
@@ -100,8 +102,9 @@ module.exports = {
     if (!shipment) throw { status: 404, message: `Shipment with id=${shipmentId} not found` };
 
     // HTTP-запит до Сервісу Складів, щоб він змінив місткість
+    const warehouseUrl = process.env.WAREHOUSE_SERVICE_URL || 'http://localhost:8082';
     try {
-      await axios.post('http://localhost:8082/api/warehouses/transfer-capacity', {
+      await axios.post(`${warehouseUrl}/api/warehouses/transfer-capacity`, {
         fromWarehouseId,
         toWarehouseId
       });

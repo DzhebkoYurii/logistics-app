@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14-alpine
+    container_name: logistics-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: user    
+      POSTGRES_PASSWORD: password 
+    volumes:
+      - ./postgres-init:/docker-entrypoint-initdb.d
+
+  redis:
+    image: redis:alpine
+    container_name: logistics-redis
+    ports:
+      - "6379:6379"
+
+  service-warehouse:
+    build: ./service-warehouse
+    container_name: service-warehouse
+    ports:
+      - "8082:8082"
+    environment:
+      - PORT=8082
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=warehouse_db
+      - DB_USER=user         
+      - DB_PASSWORD=password 
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+
+  service-shipment:
+    build: ./service-shipment
+    container_name: service-shipment
+    ports:
+      - "8081:8081"
+    environment:
+      - PORT=8081
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=shipment_db
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - WAREHOUSE_SERVICE_URL=http://service-warehouse:8082
+      - ROUTING_SERVICE_URL=http://service-routing:8083
+    depends_on:
+      - postgres
+      - service-warehouse
+
+  service-routing:
+    build: ./service-routing
+    container_name: service-routing
+    ports:
+      - "8083:8083"
+    environment:
+      - PORT=8083
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=routing_db
+      - DB_USER=user
+      - DB_PASSWORD=password
+    depends_on:
+      - postgres
